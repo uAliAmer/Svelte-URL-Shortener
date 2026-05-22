@@ -25,8 +25,8 @@ A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis.
 ## Quick start (Docker)
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/url-shortner.git
-cd url-shortner
+git clone https://github.com/uAliAmer/Svelte-URL-Shortener.git
+cd Svelte-URL-Shortener
 
 cp .env.example .env
 # Edit .env — set a strong JWT_SECRET (e.g. openssl rand -hex 32)
