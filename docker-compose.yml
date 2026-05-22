@@ -1,0 +1,46 @@
+services:
+  app:
+    build: .
+    container_name: snip-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-snip}:${POSTGRES_PASSWORD:-snip}@postgres:5432/${POSTGRES_DB:-snip}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      ORIGIN: ${PUBLIC_BASE_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: snip-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-snip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-snip}
+      POSTGRES_DB: ${POSTGRES_DB:-snip}
+    volumes:
+      - snip-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-snip} -d ${POSTGRES_DB:-snip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: snip-redis
+    restart: unless-stopped
+    volumes:
+      - snip-redis:/data
+
+volumes:
+  snip-postgres:
+  snip-redis:

@@ -1,0 +1,46 @@
+import Redis from 'ioredis';
+
+const url = process.env.REDIS_URL || 'redis://localhost:6379';
+
+const globalForRedis = globalThis;
+
+export const redis =
+  globalForRedis.__redis ??
+  new Redis(url, {
+    lazyConnect: false,
+    maxRetriesPerRequest: 2,
+    enableOfflineQueue: false
+  });
+
+redis.on('error', (err) => {
+  console.error('[redis]', err.message);
+});
+
+if (process.env.NODE_ENV !== 'production') globalForRedis.__redis = redis;
+
+const KEY = (code) => `link:${code}`;
+const TTL = 60 * 60; // 1h
+
+export async function cacheGet(code) {
+  try {
+    return await redis.get(KEY(code));
+  } catch {
+    return null;
+  }
+}
+
+export async function cacheSet(code, originalUrl) {
+  try {
+    await redis.set(KEY(code), originalUrl, 'EX', TTL);
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function cacheDel(code) {
+  try {
+    await redis.del(KEY(code));
+  } catch {
+    /* ignore */
+  }
+}
