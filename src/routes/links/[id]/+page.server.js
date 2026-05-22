@@ -1,4 +1,5 @@
 import { redirect, error } from '@sveltejs/kit';
+import QRCode from 'qrcode';
 import { prisma } from '$lib/server/prisma.js';
 
 export async function load({ params, locals, url }) {
@@ -25,10 +26,16 @@ export async function load({ params, locals, url }) {
     byDay[k] = (byDay[k] || 0) + 1;
   }
 
+  const publicBase = (process.env.PUBLIC_BASE_URL || url.origin).replace(/\/$/, '');
+  const shortUrl = `${publicBase}/${link.code}`;
+  const qrDataUrl = await QRCode.toDataURL(shortUrl, { margin: 1, width: 256 });
+
   return {
     link,
     clicks,
     byDay,
-    publicBase: process.env.PUBLIC_BASE_URL || url.origin
+    publicBase,
+    shortUrl,
+    qrDataUrl
   };
 }

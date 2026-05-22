@@ -22,8 +22,8 @@
 
 <section class="mt-16 grid gap-4 sm:grid-cols-3">
   <div class="card">
-    <div class="text-sm font-semibold text-brand-600">Private</div>
-    <p class="mt-1 text-sm text-slate-600">Only authenticated users can create links. Redirects are public.</p>
+    <div class="text-sm font-semibold text-brand-600">Self-hosted</div>
+    <p class="mt-1 text-sm text-slate-600">Run on your own infra. Only authenticated users can create links; redirects are public.</p>
   </div>
   <div class="card">
     <div class="text-sm font-semibold text-brand-600">Custom slugs</div>

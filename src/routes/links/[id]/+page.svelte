@@ -21,6 +21,8 @@
   }
 </script>
 
+<svelte:head><title>{link.code} · Snip</title></svelte:head>
+
 <a href="/dashboard" class="text-sm text-brand-600 hover:underline">← Back to dashboard</a>
 
 <header class="mt-4">
@@ -33,6 +35,27 @@
     <span>{link.isActive ? 'Active' : 'Paused'}</span>
   </div>
 </header>
+
+<section class="card mt-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+  <img
+    src={data.qrDataUrl}
+    alt="QR code for {data.shortUrl}"
+    width="160"
+    height="160"
+    class="rounded border border-slate-200"
+  />
+  <div class="flex-1">
+    <h2 class="text-sm font-semibold text-slate-700">QR code</h2>
+    <p class="mt-1 text-sm text-slate-500">Scan to open {data.shortUrl}</p>
+    <a
+      href={data.qrDataUrl}
+      download={`qr-${link.code}.png`}
+      class="mt-3 inline-block text-sm text-brand-600 hover:underline"
+    >
+      Download PNG
+    </a>
+  </div>
+</section>
 
 <section class="card mt-6">
   <h2 class="mb-4 text-sm font-semibold text-slate-700">Clicks · last 30 days</h2>

@@ -1,9 +1,12 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma.js';
 import { verifyPassword, signToken, setSessionCookie } from '$lib/server/auth.js';
+import { rateLimit } from '$lib/server/rateLimit.js';
 
-export async function POST({ request, cookies }) {
-  const body = await request.json().catch(() => ({}));
+export async function POST(event) {
+  await rateLimit(event, { bucket: 'login', limit: 10, windowSec: 60 });
+
+  const body = await event.request.json().catch(() => ({}));
   const email = (body.email || '').toLowerCase().trim();
   const password = body.password || '';
 
@@ -15,6 +18,6 @@ export async function POST({ request, cookies }) {
   const ok = await verifyPassword(password, user.password);
   if (!ok) throw error(401, 'Invalid credentials');
 
-  setSessionCookie(cookies, signToken(user.id));
+  setSessionCookie(event.cookies, signToken(user.id));
   return json({ user: { id: user.id, email: user.email } });
 }

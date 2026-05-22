@@ -7,9 +7,14 @@ import {
   validateEmail,
   validatePassword
 } from '$lib/server/auth.js';
+import { rateLimit } from '$lib/server/rateLimit.js';
 
-export async function POST({ request, cookies }) {
-  const body = await request.json().catch(() => ({}));
+export async function POST(event) {
+  if (event.locals.settings?.signupDisabled) throw error(403, 'Signups are disabled');
+
+  await rateLimit(event, { bucket: 'register', limit: 5, windowSec: 3600 });
+
+  const body = await event.request.json().catch(() => ({}));
   const email = (body.email || '').toLowerCase().trim();
   const password = body.password || '';
 
@@ -21,11 +26,14 @@ export async function POST({ request, cookies }) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) throw error(409, 'Email already registered');
 
+  const userCount = await prisma.user.count();
+  const isAdmin = userCount === 0;
+
   const user = await prisma.user.create({
-    data: { email, password: await hashPassword(password) },
+    data: { email, password: await hashPassword(password), isAdmin },
     select: { id: true, email: true }
   });
 
-  setSessionCookie(cookies, signToken(user.id));
+  setSessionCookie(event.cookies, signToken(user.id));
   return json({ user });
 }

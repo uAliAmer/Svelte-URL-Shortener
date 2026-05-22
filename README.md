@@ -1,4 +1,4 @@
-# Snip — Private URL Shortener
+# Snip — Self-Hosted URL Shortener
 
 A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis. Only authenticated users can create links; redirects are public.
 
