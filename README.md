@@ -13,7 +13,7 @@ A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis.
 - **Branded** — admins set instance name, tagline, default expiry from `/admin`
 - **User management** — admin panel for adding/removing users, granting admin/API rights, optional public signup
 - **API keys** — full or read-only scopes, `Authorization: Bearer` on every `/api/*` endpoint
-- **Self-hostable** — `docker compose up` and you're running
+- **Self-hostable** — `docker compose up` locally, or one-click deploy to Railway
 
 ## Stack
 
@@ -61,6 +61,28 @@ All env vars live in `.env` (see `.env.example`):
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `snip` / `snip` / `snip` | Postgres credentials. |
 
 Instance-level settings (brand title, tagline, signup toggle, default link expiry, API-key enable) are configured at runtime from `/admin` — no env vars or restarts needed.
+
+## Deploy to Railway
+
+[Railway](https://railway.app) provides managed Postgres + Redis, builds from your Docker image, and gives you a public URL — no extra config files needed.
+
+1. **Create a new project** in Railway and connect this repo (or your fork).
+2. **Add two services** from the Railway dashboard: **Postgres** and **Redis** (both are one-click).
+3. **Configure the app service** — Railway auto-detects the `Dockerfile`. Set these variables:
+
+   | Variable | Value |
+   |----------|-------|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference the Postgres service) |
+   | `REDIS_URL` | `${{Redis.REDIS_URL}}` (reference the Redis service) |
+   | `JWT_SECRET` | a 32-byte random string (`openssl rand -hex 32`) |
+   | `PUBLIC_BASE_URL` | your Railway-generated URL (or custom domain) |
+   | `ORIGIN` | same as `PUBLIC_BASE_URL` |
+   | `NODE_ENV` | `production` |
+
+4. **Generate a public domain** for the app service (Settings → Networking → Generate Domain), then paste it back into `PUBLIC_BASE_URL` and `ORIGIN` and redeploy.
+5. Migrations apply automatically on container start. **Optionally seed a demo admin** by running `npm run db:seed` once from the Railway shell — or just sign up at `/register` (the first user is auto-promoted to admin).
+
+That's it.
 
 ## Local development (without Docker)
 
