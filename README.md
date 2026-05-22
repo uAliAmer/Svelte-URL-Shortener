@@ -7,13 +7,15 @@ A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis.
 - **Auth-gated creation** — JWT cookie sessions, bcrypt passwords, rate-limited login/register
 - **Random + custom slugs** — 7-char base62 codes or pick your own
 - **Tags + edit + pause** — organize links, change destinations, expire or pause without deleting
+- **Time + click limits** — set `expiresAt`, `activatesAt` (scheduled activation), and `maxClicks` per link
 - **Click analytics** — IP / referrer / user-agent / country / timestamp per click, 30-day chart per link
-- **QR codes** — every link has a downloadable PNG QR
+- **Customizable QR codes** — colors, dot shapes (rounded, dots, classy, extra-rounded), corner styles, and center logo. Set an instance-wide default in `/settings`, override per link
 - **Redis-cached redirects** — sub-millisecond `code → URL` lookups
+- **Dark mode** — system-aware with persistent toggle in the header
 - **Branded** — admins set instance name, tagline, default expiry from `/settings`
 - **User management** — admin panel for adding/removing users, granting admin/API rights, optional public signup
 - **API keys** — full or read-only scopes, `Authorization: Bearer` on every `/api/*` endpoint
-- **Self-hostable** — `docker compose up` locally, or one-click deploy to Railway
+- **Self-hostable** — `docker compose up` locally, bundled Caddy override for one-command TLS, or one-click deploy to Railway
 
 ## Stack
 
@@ -60,7 +62,7 @@ All env vars live in `.env` (see `.env.example`):
 | `JWT_SECRET` | _(required)_ | Secret for signing session JWTs. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `snip` / `snip` / `snip` | Postgres credentials. |
 
-Instance-level settings (brand title, tagline, signup toggle, default link expiry, API-key enable) are configured at runtime from `/settings` (admins only) — no env vars or restarts needed.
+Instance-level settings (brand title, tagline, signup toggle, default link expiry, API-key enable, default QR style) are configured at runtime from `/settings` (admins only) — no env vars or restarts needed.
 
 ## Deploy to Railway
 
@@ -144,9 +146,9 @@ Full reference with curl examples lives at `/docs/api` once the app is running.
 | `POST` | `/api/auth/login`    | `{ email, password }` → sets session cookie |
 | `POST` | `/api/auth/logout`   | clears session cookie |
 | `GET`  | `/api/links`         | List your links |
-| `POST` | `/api/links`         | `{ originalUrl, customSlug?, expiresAt?, tag? }` |
+| `POST` | `/api/links`         | `{ originalUrl, customSlug?, expiresAt?, activatesAt?, maxClicks?, tag? }` |
 | `GET`  | `/api/links/:id`     | Get link + recent clicks |
-| `PATCH`| `/api/links/:id`     | `{ isActive?, originalUrl?, expiresAt?, tag? }` |
+| `PATCH`| `/api/links/:id`     | `{ isActive?, originalUrl?, expiresAt?, activatesAt?, maxClicks?, tag?, qrStyle? }` |
 | `DELETE`| `/api/links/:id`    | Delete a link |
 | `GET`  | `/api/keys`          | List your API keys (no plaintext) |
 | `POST` | `/api/keys`          | `{ name, scope }` → returns plaintext **once** |
@@ -159,7 +161,7 @@ Admin-only endpoints (`/api/admin/*`) accept cookie sessions only — never API 
 
 ```
 User    → id, email, passwordHash, isAdmin, canUseApi, mustChangeCredentials, createdAt
-Link    → id, code, originalUrl, userId, clickCount, expiresAt, isActive, tag
+Link    → id, code, originalUrl, userId, clickCount, expiresAt, activatesAt, maxClicks, isActive, tag, qrStyle (JSON), createdAt
 Click   → id, linkId, ip, referrer, userAgent, country, createdAt
 ApiKey  → id, userId, name, prefix, hash, scope, lastUsedAt, revokedAt, createdAt
 Setting → key, value (JSON-encoded, single global namespace)
@@ -173,10 +175,16 @@ Available at `/settings` — admins see the full instance-management UI; non-adm
 - Toggle **public signup** (when off, `/api/auth/register` returns 403)
 - Toggle **API keys** globally + revoke per-user API access
 - Set a **default expiry** for new links
+- Configure the **default QR style** (colors, dot shape, corner shapes, center logo) — applied to every QR unless a link overrides it
 - **Add users** (bypasses the signup gate, forces credential rotation on first login)
 - **Delete users** with a choice: transfer their links to your account, or cascade-delete them
+- **Manage your own API keys** (visible to every signed-in user, not just admins)
 
 The last admin cannot be deleted or demoted. You can't delete yourself.
+
+### Per-link QR overrides
+
+On any link's detail page (`/links/<id>`), the **Customize QR** button reveals the same style editor scoped to that one link. Toggle **Use instance default style** to clear an override. Downloads always render at 1024×1024 and reflect the active style (shapes, logo, colors).
 
 ## Production notes
 
