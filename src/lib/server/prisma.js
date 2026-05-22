@@ -2,10 +2,28 @@ import { PrismaClient } from '@prisma/client';
 
 const globalForPrisma = globalThis;
 
-export const prisma =
-  globalForPrisma.__prisma ??
-  new PrismaClient({
+function makeClient() {
+  return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error']
   });
+}
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.__prisma = prisma;
+function getClient() {
+  if (!globalForPrisma.__prisma) {
+    globalForPrisma.__prisma = makeClient();
+  }
+  return globalForPrisma.__prisma;
+}
+
+// Lazy proxy: defers PrismaClient instantiation until first property access.
+// Prevents engine load during `vite build` SSR analysis.
+export const prisma = new Proxy(
+  {},
+  {
+    get(_t, prop) {
+      const client = getClient();
+      const value = client[prop];
+      return typeof value === 'function' ? value.bind(client) : value;
+    }
+  }
+);

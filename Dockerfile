@@ -2,6 +2,9 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
+# Prisma engine needs openssl + libc6-compat on alpine
+RUN apk add --no-cache openssl libc6-compat
+
 # Install deps (cached)
 COPY package.json package-lock.json* ./
 RUN npm install --no-audit --no-fund

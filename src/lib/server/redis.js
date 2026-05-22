@@ -4,17 +4,19 @@ const url = process.env.REDIS_URL || 'redis://localhost:6379';
 
 const globalForRedis = globalThis;
 
-export const redis =
-  globalForRedis.__redis ??
-  new Redis(url, {
-    lazyConnect: false,
+function makeRedis() {
+  const client = new Redis(url, {
+    lazyConnect: true,
     maxRetriesPerRequest: 2,
     enableOfflineQueue: false
   });
+  client.on('error', (err) => {
+    console.error('[redis]', err.message);
+  });
+  return client;
+}
 
-redis.on('error', (err) => {
-  console.error('[redis]', err.message);
-});
+export const redis = globalForRedis.__redis ?? makeRedis();
 
 if (process.env.NODE_ENV !== 'production') globalForRedis.__redis = redis;
 

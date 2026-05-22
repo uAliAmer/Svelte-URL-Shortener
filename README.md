@@ -4,12 +4,12 @@ A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis.
 
 ## Features
 
-- 🔐 **Auth-gated creation** — JWT cookie sessions, bcrypt password hashing
-- 🎯 **Random + custom slugs** — 7-char base62 random codes or pick your own
-- 📊 **Full click analytics** — every click logs IP, referrer, user-agent, country, timestamp
-- ⚡ **Redis-cached redirects** — sub-millisecond `code → URL` lookups
-- ⏰ **Expiration + pause** — set TTL or pause links without deleting
-- 🐳 **Fully dockerized** — `docker compose up` and you're running
+- **Auth-gated creation** — JWT cookie sessions, bcrypt password hashing
+- **Random + custom slugs** — 7-char base62 random codes or pick your own
+- **Full click analytics** — every click logs IP, referrer, user-agent, country, timestamp
+- **Redis-cached redirects** — sub-millisecond `code → URL` lookups
+- **Expiration + pause** — set TTL or pause links without deleting
+- **Fully dockerized** — `docker compose up` and you're running
 
 ## Stack
 

@@ -112,7 +112,7 @@
                     {base}/{link.code}
                   </a>
                   <button class="text-xs text-slate-500 hover:text-slate-900" on:click={() => copy(link.code)}>
-                    {copied === link.code ? '✓ copied' : 'copy'}
+                    {copied === link.code ? 'copied' : 'copy'}
                   </button>
                   {#if !link.isActive}
                     <span class="rounded bg-slate-200 px-1.5 py-0.5 text-xs text-slate-700">paused</span>
