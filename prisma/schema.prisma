@@ -9,11 +9,36 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  links     Link[]
-  createdAt DateTime @default(now())
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  password              String
+  isAdmin               Boolean  @default(false)
+  canUseApi             Boolean  @default(true)
+  mustChangeCredentials Boolean  @default(false)
+  links                 Link[]
+  apiKeys               ApiKey[]
+  createdAt             DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  prefix     String
+  hash       String    @unique
+  scope      String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@index([hash])
 }
 
 model Link {
@@ -25,10 +50,12 @@ model Link {
   clickCount  Int       @default(0)
   expiresAt   DateTime?
   isActive    Boolean   @default(true)
+  tag         String?
   clicks      Click[]
   createdAt   DateTime  @default(now())
 
   @@index([userId])
+  @@index([userId, tag])
 }
 
 model Click {

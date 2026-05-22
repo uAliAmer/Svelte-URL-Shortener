@@ -1,9 +1,11 @@
 <script>
   import { goto } from '$app/navigation';
+  export let data;
   let email = '';
   let password = '';
   let err = '';
   let loading = false;
+  $: signupDisabled = !!data.settings?.signupDisabled;
 
   async function submit() {
     err = '';
@@ -15,7 +17,7 @@
         body: JSON.stringify({ email, password })
       });
       if (!res.ok) {
-        err = (await res.text()) || 'Registration failed';
+        try { const j = await res.json(); err = j.message || 'Registration failed'; } catch { err = 'Registration failed'; }
         return;
       }
       goto('/dashboard', { invalidateAll: true });
@@ -25,8 +27,17 @@
   }
 </script>
 
+<svelte:head><title>Sign up · Snip</title></svelte:head>
+
 <div class="mx-auto max-w-sm">
   <h1 class="mb-6 text-2xl font-bold text-slate-900">Create an account</h1>
+  {#if signupDisabled}
+    <div class="card text-center text-sm text-slate-600">
+      <p class="mb-2 text-base font-semibold text-slate-900">Signups are disabled</p>
+      <p>This instance is invitation-only. Contact the administrator for an account.</p>
+      <a href="/login" class="mt-4 inline-block text-brand-600 hover:underline">Log in instead</a>
+    </div>
+  {:else}
   <form class="card space-y-4" on:submit|preventDefault={submit}>
     <div>
       <label class="label" for="email">Email</label>
@@ -47,4 +58,5 @@
       Already have one? <a href="/login" class="text-brand-600 hover:underline">Log in</a>
     </p>
   </form>
+  {/if}
 </div>

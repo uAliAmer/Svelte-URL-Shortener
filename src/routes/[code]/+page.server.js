@@ -3,7 +3,7 @@ import { prisma } from '$lib/server/prisma.js';
 import { cacheGet, cacheSet, cacheDel } from '$lib/server/redis.js';
 import { RESERVED_PATHS } from '$lib/server/codegen.js';
 
-export async function GET({ params, request, getClientAddress }) {
+export async function load({ params, request, getClientAddress }) {
   const { code } = params;
 
   if (RESERVED_PATHS.has(code.toLowerCase())) throw error(404, 'Not found');
@@ -22,7 +22,6 @@ export async function GET({ params, request, getClientAddress }) {
     await cacheSet(code, originalUrl);
   }
 
-  // Fire-and-forget click logging
   logClick(code, link, request, getClientAddress).catch((e) =>
     console.error('[click-log]', e.message)
   );

@@ -15,7 +15,7 @@
         body: JSON.stringify({ email, password })
       });
       if (!res.ok) {
-        err = (await res.text()) || 'Login failed';
+        try { const j = await res.json(); err = j.message || 'Login failed'; } catch { err = 'Login failed'; }
         return;
       }
       goto('/dashboard', { invalidateAll: true });
@@ -24,6 +24,8 @@
     }
   }
 </script>
+
+<svelte:head><title>Log in · Snip</title></svelte:head>
 
 <div class="mx-auto max-w-sm">
   <h1 class="mb-6 text-2xl font-bold text-slate-900">Log in</h1>

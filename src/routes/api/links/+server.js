@@ -23,11 +23,13 @@ export async function GET({ locals, url }) {
 
 export async function POST({ request, locals }) {
   if (!locals.user) throw error(401, 'Unauthorized');
+  if (locals.apiScope === 'read') throw error(403, 'Read-only key');
 
   const body = await request.json().catch(() => ({}));
   const originalUrl = (body.originalUrl || '').trim();
   const customSlug = body.customSlug ? String(body.customSlug).trim() : null;
   const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
+  const tag = body.tag ? String(body.tag).trim().slice(0, 32) || null : null;
 
   const urlErr = validateUrl(originalUrl);
   if (urlErr) throw error(400, urlErr);
@@ -60,7 +62,8 @@ export async function POST({ request, locals }) {
       code,
       originalUrl,
       userId: locals.user.id,
-      expiresAt
+      expiresAt,
+      tag
     }
   });
 
