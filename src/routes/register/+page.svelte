@@ -30,10 +30,10 @@
 <svelte:head><title>Sign up · Snip</title></svelte:head>
 
 <div class="mx-auto max-w-sm">
-  <h1 class="mb-6 text-2xl font-bold text-slate-900">Create an account</h1>
+  <h1 class="mb-6 text-2xl font-bold text-slate-900 dark:text-slate-100">Create an account</h1>
   {#if signupDisabled}
-    <div class="card text-center text-sm text-slate-600">
-      <p class="mb-2 text-base font-semibold text-slate-900">Signups are disabled</p>
+    <div class="card text-center text-sm text-slate-600 dark:text-slate-300">
+      <p class="mb-2 text-base font-semibold text-slate-900 dark:text-slate-100">Signups are disabled</p>
       <p>This instance is invitation-only. Contact the administrator for an account.</p>
       <a href="/login" class="mt-4 inline-block text-brand-600 hover:underline">Log in instead</a>
     </div>
@@ -46,7 +46,7 @@
     <div>
       <label class="label" for="password">Password</label>
       <input id="password" class="input" type="password" bind:value={password} required minlength="8" autocomplete="new-password" />
-      <p class="mt-1 text-xs text-slate-500">At least 8 characters.</p>
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">At least 8 characters.</p>
     </div>
     {#if err}
       <p class="text-sm text-red-600">{err}</p>
@@ -54,7 +54,7 @@
     <button class="btn-primary w-full" disabled={loading}>
       {loading ? 'Creating…' : 'Sign up'}
     </button>
-    <p class="text-center text-sm text-slate-600">
+    <p class="text-center text-sm text-slate-600 dark:text-slate-300">
       Already have one? <a href="/login" class="text-brand-600 hover:underline">Log in</a>
     </p>
   </form>

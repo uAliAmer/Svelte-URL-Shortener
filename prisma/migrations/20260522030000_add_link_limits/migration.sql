@@ -1,0 +1,2 @@
+ALTER TABLE "Link" ADD COLUMN "activatesAt" TIMESTAMP(3);
+ALTER TABLE "Link" ADD COLUMN "maxClicks" INTEGER;

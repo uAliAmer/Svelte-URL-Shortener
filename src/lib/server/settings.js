@@ -1,21 +1,24 @@
 import { prisma } from './prisma.js';
+import { DEFAULT_QR_STYLE, sanitizeQrStyle } from '$lib/qrStyle.js';
 
 export const KNOWN_SETTINGS = {
   signupDisabled: { type: 'bool', default: false },
   brandTitle: { type: 'string', default: 'Snip' },
   brandTagline: { type: 'string', default: 'open-source self-hosted URL shortener' },
   defaultExpiryDays: { type: 'int', default: null },
-  apiKeysEnabled: { type: 'bool', default: true }
+  apiKeysEnabled: { type: 'bool', default: true },
+  qrStyle: { type: 'json', default: DEFAULT_QR_STYLE, sanitize: sanitizeQrStyle }
 };
 
 let cache = null;
 
-function parse(type, raw) {
+function parse(meta, raw) {
   if (raw === null || raw === undefined) return null;
   try {
     const v = JSON.parse(raw);
-    if (type === 'bool') return Boolean(v);
-    if (type === 'int') return v === null ? null : Number(v);
+    if (meta.type === 'bool') return Boolean(v);
+    if (meta.type === 'int') return v === null ? null : Number(v);
+    if (meta.type === 'json') return meta.sanitize ? meta.sanitize(v) : v;
     return String(v);
   } catch {
     return null;
@@ -31,7 +34,7 @@ export async function getSettings() {
     const rows = await prisma.setting.findMany();
     for (const row of rows) {
       if (!KNOWN_SETTINGS[row.key]) continue;
-      const parsed = parse(KNOWN_SETTINGS[row.key].type, row.value);
+      const parsed = parse(KNOWN_SETTINGS[row.key], row.value);
       if (parsed !== null) out[row.key] = parsed;
     }
   } catch (e) {
@@ -49,6 +52,7 @@ export async function setSetting(key, value) {
   let coerced = value;
   if (meta.type === 'bool') coerced = Boolean(value);
   else if (meta.type === 'int') coerced = value === null || value === '' ? null : Number(value);
+  else if (meta.type === 'json') coerced = meta.sanitize ? meta.sanitize(value) : value;
   else coerced = String(value ?? '');
 
   await prisma.setting.upsert({

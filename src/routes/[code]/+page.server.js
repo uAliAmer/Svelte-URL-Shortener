@@ -14,12 +14,21 @@ export async function load({ params, request, getClientAddress }) {
   if (!originalUrl) {
     link = await prisma.link.findUnique({ where: { code } });
     if (!link || !link.isActive) throw error(404, 'Link not found');
-    if (link.expiresAt && link.expiresAt < new Date()) {
+    const now = new Date();
+    if (link.activatesAt && link.activatesAt > now) {
+      throw error(425, 'Link not active yet');
+    }
+    if (link.expiresAt && link.expiresAt < now) {
       await cacheDel(code);
       throw error(410, 'Link expired');
     }
+    if (link.maxClicks != null && link.clickCount >= link.maxClicks) {
+      throw error(410, 'Click limit reached');
+    }
     originalUrl = link.originalUrl;
-    await cacheSet(code, originalUrl);
+    if (link.maxClicks == null && !link.activatesAt) {
+      await cacheSet(code, originalUrl);
+    }
   }
 
   logClick(code, link, request, getClientAddress).catch((e) =>

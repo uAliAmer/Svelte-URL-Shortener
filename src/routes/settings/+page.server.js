@@ -1,10 +1,27 @@
-import { error, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma.js';
 import { getSettings } from '$lib/server/settings.js';
 
 export async function load({ locals }) {
   if (!locals.user) throw redirect(303, '/login');
-  if (!locals.user.isAdmin) throw error(403, 'Admin only');
+
+  const keys = await prisma.apiKey.findMany({
+    where: { userId: locals.user.id },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      prefix: true,
+      scope: true,
+      lastUsedAt: true,
+      revokedAt: true,
+      createdAt: true
+    }
+  });
+
+  if (!locals.user.isAdmin) {
+    return { keys, users: [], stats: null, settings: await getSettings() };
+  }
 
   const [users, settings, stats] = await Promise.all([
     prisma.user.findMany({
@@ -29,6 +46,7 @@ export async function load({ locals }) {
   ]);
 
   return {
+    keys,
     users,
     settings,
     stats: { users: stats[0], links: stats[1], clicks: stats[2], apiKeys: stats[3] }

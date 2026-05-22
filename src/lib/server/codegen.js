@@ -14,6 +14,7 @@ const RESERVED = new Set([
   'robots.txt',
   '_app',
   'admin',
+  'settings',
   'account',
   'docs'
 ]);

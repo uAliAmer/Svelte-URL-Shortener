@@ -1,0 +1,26 @@
+services:
+  app:
+    ports: !reset []
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: snip-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - snip-caddy-data:/data
+      - snip-caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  snip-caddy-data:
+  snip-caddy-config:

@@ -49,8 +49,11 @@ model Link {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   clickCount  Int       @default(0)
   expiresAt   DateTime?
+  activatesAt DateTime?
+  maxClicks   Int?
   isActive    Boolean   @default(true)
   tag         String?
+  qrStyle     String?
   clicks      Click[]
   createdAt   DateTime  @default(now())
 

@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma.js';
 import { cacheDel } from '$lib/server/redis.js';
 import { validateUrl } from '$lib/server/codegen.js';
+import { sanitizeQrStyle } from '$lib/qrStyle.js';
 
 async function loadOwned(locals, id) {
   if (!locals.user) throw error(401, 'Unauthorized');
@@ -49,9 +50,37 @@ export async function PATCH({ params, locals, request }) {
     }
   }
 
+  if ('activatesAt' in body) {
+    if (body.activatesAt === null || body.activatesAt === '') {
+      data.activatesAt = null;
+    } else {
+      const d = new Date(body.activatesAt);
+      if (isNaN(d.getTime())) throw error(400, 'Invalid activatesAt');
+      data.activatesAt = d;
+    }
+  }
+
+  if ('maxClicks' in body) {
+    if (body.maxClicks === null || body.maxClicks === '') {
+      data.maxClicks = null;
+    } else {
+      const n = Number(body.maxClicks);
+      if (!Number.isInteger(n) || n <= 0) throw error(400, 'maxClicks must be a positive integer');
+      data.maxClicks = n;
+    }
+  }
+
   if ('tag' in body) {
     const t = body.tag ? String(body.tag).trim().slice(0, 32) : '';
     data.tag = t || null;
+  }
+
+  if ('qrStyle' in body) {
+    if (body.qrStyle === null) {
+      data.qrStyle = null;
+    } else {
+      data.qrStyle = JSON.stringify(sanitizeQrStyle(body.qrStyle));
+    }
   }
 
   const updated = await prisma.link.update({ where: { id: link.id }, data });

@@ -1,18 +1,27 @@
 <script>
   import { invalidateAll, goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import QrPreview from '$lib/QrPreview.svelte';
   export let data;
+
+  let qrRefs = {};
+  async function downloadQr(id, code) {
+    const ref = qrRefs[id];
+    if (ref && ref.download) await ref.download(`qr-${code}.png`);
+  }
 
   let originalUrl = '';
   let customSlug = '';
   let expiresAt = '';
+  let activatesAt = '';
+  let maxClicks = '';
   let tag = '';
   let err = '';
   let creating = false;
   let copied = '';
 
   let editing = null;
-  let editForm = { originalUrl: '', expiresAt: '', tag: '' };
+  let editForm = { originalUrl: '', expiresAt: '', activatesAt: '', maxClicks: '', tag: '' };
   let editErr = '';
   let saving = false;
 
@@ -32,6 +41,8 @@
           originalUrl,
           customSlug: customSlug || undefined,
           expiresAt: expiresAt || undefined,
+          activatesAt: activatesAt || undefined,
+          maxClicks: maxClicks || undefined,
           tag: tag || undefined
         })
       });
@@ -42,6 +53,8 @@
       originalUrl = '';
       customSlug = '';
       expiresAt = '';
+      activatesAt = '';
+      maxClicks = '';
       tag = '';
       await invalidateAll();
     } finally {
@@ -81,6 +94,8 @@
     editForm = {
       originalUrl: link.originalUrl,
       expiresAt: link.expiresAt ? new Date(link.expiresAt).toISOString().slice(0, 16) : '',
+      activatesAt: link.activatesAt ? new Date(link.activatesAt).toISOString().slice(0, 16) : '',
+      maxClicks: link.maxClicks ?? '',
       tag: link.tag || ''
     };
   }
@@ -100,6 +115,8 @@
         body: JSON.stringify({
           originalUrl: editForm.originalUrl,
           expiresAt: editForm.expiresAt || null,
+          activatesAt: editForm.activatesAt || null,
+          maxClicks: editForm.maxClicks === '' ? null : editForm.maxClicks,
           tag: editForm.tag
         })
       });
@@ -131,7 +148,7 @@
 
 <div class="grid gap-8 lg:grid-cols-[1fr_2fr]">
   <section>
-    <h2 class="mb-3 text-lg font-semibold text-slate-900">Create a short link</h2>
+    <h2 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Create a short link</h2>
     <form class="card space-y-4" on:submit|preventDefault={create}>
       <div>
         <label class="label" for="url">Destination URL</label>
@@ -140,7 +157,7 @@
       <div>
         <label class="label" for="slug">Custom slug <span class="text-slate-400">(optional)</span></label>
         <div class="flex items-center gap-2">
-          <span class="text-sm text-slate-500">{base}/</span>
+          <span class="text-sm text-slate-500 dark:text-slate-400">{base}/</span>
           <input id="slug" class="input" type="text" placeholder="my-link" bind:value={customSlug} pattern="[a-zA-Z0-9_-]{'{3,32}'}" />
         </div>
       </div>
@@ -155,6 +172,14 @@
         <label class="label" for="exp">Expires <span class="text-slate-400">(optional)</span></label>
         <input id="exp" class="input" type="datetime-local" bind:value={expiresAt} />
       </div>
+      <div>
+        <label class="label" for="act">Activates at <span class="text-slate-400">(optional — link is inactive before this)</span></label>
+        <input id="act" class="input" type="datetime-local" bind:value={activatesAt} />
+      </div>
+      <div>
+        <label class="label" for="maxc">Max clicks <span class="text-slate-400">(optional — auto-expires after N clicks)</span></label>
+        <input id="maxc" class="input" type="number" min="1" placeholder="e.g. 100" bind:value={maxClicks} />
+      </div>
       {#if err}
         <p class="text-sm text-red-600">{err}</p>
       {/if}
@@ -165,19 +190,19 @@
   </section>
 
   <section>
-    <h2 class="mb-3 text-lg font-semibold text-slate-900">Your links</h2>
+    <h2 class="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">Your links</h2>
 
     {#if tags.length > 0}
       <div class="mb-4 flex flex-wrap items-center gap-2 text-xs">
         <button
-          class="rounded-full px-3 py-1 {activeTag === '' ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}"
+          class="rounded-full px-3 py-1 {activeTag === '' ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 hover:bg-slate-300'}"
           on:click={() => setTagFilter('')}
         >
           All
         </button>
         {#each tags as t}
           <button
-            class="rounded-full px-3 py-1 {activeTag === t ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}"
+            class="rounded-full px-3 py-1 {activeTag === t ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 hover:bg-slate-300'}"
             on:click={() => setTagFilter(t)}
           >
             #{t}
@@ -189,10 +214,10 @@
     {#if links.length === 0}
       <div class="card flex flex-col items-center gap-2 py-12 text-center">
         <div class="text-4xl">🔗</div>
-        <p class="text-lg font-semibold text-slate-800">
+        <p class="text-lg font-semibold text-slate-800 dark:text-slate-100">
           {activeTag ? `No links tagged #${activeTag}` : 'No links yet'}
         </p>
-        <p class="max-w-sm text-sm text-slate-500">
+        <p class="max-w-sm text-sm text-slate-500 dark:text-slate-400">
           {activeTag
             ? 'Try a different tag, or clear the filter.'
             : 'Create your first short link with the form on the left. Paste any long URL to get started.'}
@@ -205,18 +230,29 @@
       <ul class="space-y-3">
         {#each links as link (link.id)}
           <li class="card">
-            <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex gap-4">
+              <button
+                type="button"
+                title="Download QR code"
+                class="group relative shrink-0 self-start rounded border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-100"
+                on:click={() => downloadQr(link.id, link.code)}
+              >
+                <QrPreview bind:this={qrRefs[link.id]} data={`${base}/${link.code}`} style={link.qrStyle} size={104} fallback={link.qrDataUrl} />
+                <span class="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-slate-900/70 text-xs font-medium text-white opacity-0 transition group-hover:opacity-100">
+                  Download
+                </span>
+              </button>
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <a href={`${base}/${link.code}`} target="_blank" rel="noopener" class="truncate font-mono text-brand-600 hover:underline">
+                  <a href={`${base}/${link.code}`} target="_blank" rel="noopener" class="break-all font-mono text-brand-600 hover:underline">
                     {base}/{link.code}
                   </a>
-                  <button class="text-xs text-slate-500 hover:text-slate-900" on:click={() => copy(link.code)}>
+                  <button class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-100" on:click={() => copy(link.code)}>
                     {copied === link.code ? 'copied' : 'copy'}
                   </button>
                   {#if link.tag}
                     <button
-                      class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-200"
+                      class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200"
                       on:click={() => setTagFilter(link.tag)}
                     >
                       #{link.tag}
@@ -228,20 +264,27 @@
                   {#if link.expiresAt && new Date(link.expiresAt) < new Date()}
                     <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-700">expired</span>
                   {/if}
+                  {#if link.activatesAt && new Date(link.activatesAt) > new Date()}
+                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">scheduled</span>
+                  {/if}
+                  {#if link.maxClicks != null && link.clickCount >= link.maxClicks}
+                    <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-700">limit reached</span>
+                  {/if}
                 </div>
-                <div class="mt-1 truncate text-sm text-slate-500">→ {link.originalUrl}</div>
+                <div class="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">→ {link.originalUrl}</div>
                 <div class="mt-1 text-xs text-slate-400">
-                  {link.clickCount} clicks · created {fmtDate(link.createdAt)}
+                  {link.clickCount}{link.maxClicks != null ? `/${link.maxClicks}` : ''} clicks · created {fmtDate(link.createdAt)}
+                  {#if link.activatesAt && new Date(link.activatesAt) > new Date()} · activates {fmtDate(link.activatesAt)}{/if}
                   {#if link.expiresAt} · expires {fmtDate(link.expiresAt)}{/if}
                 </div>
-              </div>
-              <div class="flex shrink-0 items-center gap-2">
-                <a href={`/links/${link.id}`} class="btn-ghost text-xs">Analytics</a>
-                <button class="btn-ghost text-xs" on:click={() => openEdit(link)}>Edit</button>
-                <button class="btn-ghost text-xs" on:click={() => toggle(link)}>
-                  {link.isActive ? 'Pause' : 'Resume'}
-                </button>
-                <button class="btn-danger text-xs" on:click={() => del(link.id)}>Delete</button>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <a href={`/links/${link.id}`} class="btn-ghost text-xs">Analytics</a>
+                  <button class="btn-ghost text-xs" on:click={() => openEdit(link)}>Edit</button>
+                  <button class="btn-ghost text-xs" on:click={() => toggle(link)}>
+                    {link.isActive ? 'Pause' : 'Resume'}
+                  </button>
+                  <button class="btn-danger text-xs" on:click={() => del(link.id)}>Delete</button>
+                </div>
               </div>
             </div>
           </li>
@@ -260,9 +303,9 @@
     aria-modal="true"
     tabindex="-1"
   >
-    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-      <h3 class="mb-1 text-lg font-semibold text-slate-900">Edit link</h3>
-      <p class="mb-4 font-mono text-sm text-slate-500">{base}/{editing.code}</p>
+    <div class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-slate-900">
+      <h3 class="mb-1 text-lg font-semibold text-slate-900 dark:text-slate-100">Edit link</h3>
+      <p class="mb-4 font-mono text-sm text-slate-500 dark:text-slate-400">{base}/{editing.code}</p>
       <form class="space-y-4" on:submit|preventDefault={saveEdit}>
         <div>
           <label class="label" for="edit-url">Destination URL</label>
@@ -275,6 +318,14 @@
         <div>
           <label class="label" for="edit-exp">Expires</label>
           <input id="edit-exp" class="input" type="datetime-local" bind:value={editForm.expiresAt} />
+        </div>
+        <div>
+          <label class="label" for="edit-act">Activates at</label>
+          <input id="edit-act" class="input" type="datetime-local" bind:value={editForm.activatesAt} />
+        </div>
+        <div>
+          <label class="label" for="edit-max">Max clicks</label>
+          <input id="edit-max" class="input" type="number" min="1" placeholder="leave blank for unlimited" bind:value={editForm.maxClicks} />
         </div>
         {#if editErr}
           <p class="text-sm text-red-600">{editErr}</p>

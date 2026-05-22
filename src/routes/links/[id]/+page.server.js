@@ -1,6 +1,8 @@
 import { redirect, error } from '@sveltejs/kit';
 import QRCode from 'qrcode';
 import { prisma } from '$lib/server/prisma.js';
+import { getSettings } from '$lib/server/settings.js';
+import { mergeQrStyle, toQrcodeLibOptions } from '$lib/qrStyle.js';
 
 export async function load({ params, locals, url }) {
   if (!locals.user) throw redirect(303, '/login');
@@ -28,14 +30,22 @@ export async function load({ params, locals, url }) {
 
   const publicBase = (process.env.PUBLIC_BASE_URL || url.origin).replace(/\/$/, '');
   const shortUrl = `${publicBase}/${link.code}`;
-  const qrDataUrl = await QRCode.toDataURL(shortUrl, { margin: 1, width: 256 });
+
+  const settings = await getSettings();
+  const instanceStyle = settings.qrStyle;
+  let override = null;
+  try { if (link.qrStyle) override = JSON.parse(link.qrStyle); } catch { /* ignore */ }
+  const effectiveStyle = mergeQrStyle(instanceStyle, override);
+  const qrDataUrl = await QRCode.toDataURL(shortUrl, toQrcodeLibOptions(effectiveStyle, { width: 256 }));
 
   return {
-    link,
+    link: { ...link, qrStyleOverride: override },
     clicks,
     byDay,
     publicBase,
     shortUrl,
-    qrDataUrl
+    qrDataUrl,
+    instanceStyle,
+    effectiveStyle
   };
 }

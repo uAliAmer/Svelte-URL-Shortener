@@ -6,8 +6,8 @@
 <svelte:head><title>Account setup</title></svelte:head>
 
 <div class="mx-auto max-w-md">
-  <h1 class="mb-2 text-2xl font-bold text-slate-900">Set your credentials</h1>
-  <p class="mb-6 text-sm text-slate-500">
+  <h1 class="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">Set your credentials</h1>
+  <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">
     You're using the seeded demo account. Choose a new email and password before continuing.
   </p>
 
@@ -15,7 +15,7 @@
     <div>
       <label class="label" for="current">Current password</label>
       <input id="current" name="currentPassword" class="input" type="password" required autocomplete="current-password" />
-      <p class="mt-1 text-xs text-slate-400">Default demo password is <code>demo1234</code></p>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Default demo password is <code>demo1234</code></p>
     </div>
     <div>
       <label class="label" for="email">New email</label>
@@ -24,7 +24,7 @@
     <div>
       <label class="label" for="pw">New password</label>
       <input id="pw" name="password" class="input" type="password" minlength="8" required autocomplete="new-password" />
-      <p class="mt-1 text-xs text-slate-400">At least 8 characters.</p>
+      <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">At least 8 characters.</p>
     </div>
     {#if form?.message}
       <p class="text-sm text-red-600">{form.message}</p>

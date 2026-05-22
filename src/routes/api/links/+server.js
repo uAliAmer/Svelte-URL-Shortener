@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma.js';
 import { randomCode, validateSlug, validateUrl } from '$lib/server/codegen.js';
+import { sanitizeQrStyle } from '$lib/qrStyle.js';
 
 export async function GET({ locals, url }) {
   if (!locals.user) throw error(401, 'Unauthorized');
@@ -29,6 +30,8 @@ export async function POST({ request, locals }) {
   const originalUrl = (body.originalUrl || '').trim();
   const customSlug = body.customSlug ? String(body.customSlug).trim() : null;
   const expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
+  const activatesAt = body.activatesAt ? new Date(body.activatesAt) : null;
+  const maxClicks = body.maxClicks != null && body.maxClicks !== '' ? Number(body.maxClicks) : null;
   const tag = body.tag ? String(body.tag).trim().slice(0, 32) || null : null;
 
   const urlErr = validateUrl(originalUrl);
@@ -36,6 +39,12 @@ export async function POST({ request, locals }) {
 
   if (expiresAt && (isNaN(expiresAt.getTime()) || expiresAt < new Date())) {
     throw error(400, 'expiresAt must be a future date');
+  }
+  if (activatesAt && isNaN(activatesAt.getTime())) {
+    throw error(400, 'Invalid activatesAt');
+  }
+  if (maxClicks != null && (!Number.isInteger(maxClicks) || maxClicks <= 0)) {
+    throw error(400, 'maxClicks must be a positive integer');
   }
 
   let code = customSlug;
@@ -63,6 +72,8 @@ export async function POST({ request, locals }) {
       originalUrl,
       userId: locals.user.id,
       expiresAt,
+      activatesAt,
+      maxClicks,
       tag
     }
   });
