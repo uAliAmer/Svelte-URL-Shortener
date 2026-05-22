@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { prisma } from './prisma.js';
 
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET) {
@@ -58,4 +60,36 @@ export function validatePassword(password) {
   if (typeof password !== 'string') return 'Password required';
   if (password.length < 8) return 'Password must be at least 8 characters';
   return null;
+}
+
+export function generateApiKey(scope) {
+  const letter = scope === 'read' ? 'r' : 'f';
+  const raw = crypto.randomBytes(24).toString('base64url');
+  const plaintext = `snip_${letter}_${raw}`;
+  const hash = crypto.createHash('sha256').update(plaintext).digest('hex');
+  const prefix = plaintext.slice(0, 12);
+  return { plaintext, hash, prefix };
+}
+
+export function hashApiKey(plaintext) {
+  return crypto.createHash('sha256').update(plaintext).digest('hex');
+}
+
+export async function verifyApiKey(plaintext, userSelect) {
+  if (!plaintext || !plaintext.startsWith('snip_')) return null;
+  const hash = hashApiKey(plaintext);
+  const key = await prisma.apiKey.findUnique({
+    where: { hash },
+    include: { user: { select: userSelect } }
+  });
+  if (!key || key.revokedAt) return null;
+  if (!key.user) return null;
+  if (!key.user.canUseApi) return null;
+
+  // fire-and-forget lastUsedAt
+  prisma.apiKey
+    .update({ where: { id: key.id }, data: { lastUsedAt: new Date() } })
+    .catch((e) => console.error('[apikey] lastUsedAt', e.message));
+
+  return { user: key.user, scope: key.scope, keyId: key.id };
 }

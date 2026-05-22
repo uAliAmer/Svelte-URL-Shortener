@@ -13,7 +13,9 @@ const RESERVED = new Set([
   'favicon.ico',
   'robots.txt',
   '_app',
-  'admin'
+  'admin',
+  'account',
+  'docs'
 ]);
 
 export function randomCode(length = 7) {
