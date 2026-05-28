@@ -17,6 +17,16 @@ A self-hosted URL shortener built with SvelteKit, Prisma, PostgreSQL, and Redis.
 - **API keys** — full or read-only scopes, `Authorization: Bearer` on every `/api/*` endpoint
 - **Self-hostable** — `docker compose up` locally, bundled Caddy override for one-command TLS, or one-click deploy to Railway
 
+## Screenshots
+
+| Dashboard | Analytics |
+|-----------|-----------|
+| ![Dashboard](docs/Dashboard.png) | ![Analytics](docs/Analytics.png) |
+
+| Settings | Users & API keys |
+|----------|-----------------|
+| ![Settings](docs/Settings.png) | ![Users & API keys](docs/users&api.png) |
+
 ## Stack
 
 | Layer    | Tech |
